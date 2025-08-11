@@ -1,0 +1,7 @@
+flask
+graphene
+flask-cors
+couchdb
+cryptography
+zlib-ng
+graphene-flask
