@@ -4,6 +4,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import TableOfContents from './TableOfContents';
 import OfflineIndicator from './OfflineIndicator';
+import FullscreenPDFViewer from './FullscreenPDFViewer';
 import { OfflineStorage } from '../utils/offlineStorage';
 
 // Configure PDF.js worker with CDN (works better with React builds)
@@ -23,6 +24,7 @@ export default function PDFPreview({ fileData, filename = "document.pdf", pdfId,
   const [showToC, setShowToC] = useState(false);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [offlineData, setOfflineData] = useState(null);
+  const [showAlternativeFullscreen, setShowAlternativeFullscreen] = useState(false);
 
   // Process PDF data - either from props or offline cache
   const pdfData = useMemo(() => {
@@ -221,6 +223,10 @@ export default function PDFPreview({ fileData, filename = "document.pdf", pdfId,
 
   const handleFullscreen = () => {
     setIsFullscreen(prev => !prev);
+  };
+
+  const handleAlternativeFullscreen = () => {
+    setShowAlternativeFullscreen(true);
   };
 
   const handleToggleToC = () => {
@@ -537,6 +543,17 @@ export default function PDFPreview({ fileData, filename = "document.pdf", pdfId,
                 </svg>
               )}
             </button>
+
+            {/* Alternative Fullscreen Button */}
+            <button
+              onClick={handleAlternativeFullscreen}
+              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded transition-colors"
+              title="Enhanced Fullscreen Viewer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -644,6 +661,18 @@ export default function PDFPreview({ fileData, filename = "document.pdf", pdfId,
           <p>Keyboard shortcuts:</p>
           <p>← → Navigate pages | + - Zoom | R Rotate | F Fullscreen | T ToC | Esc Exit</p>
         </div>
+      )}
+
+      {/* Alternative Fullscreen Viewer */}
+      {showAlternativeFullscreen && (
+        <FullscreenPDFViewer
+          fileData={fileData || offlineData}
+          filename={filename}
+          initialPage={currentPage}
+          onClose={() => setShowAlternativeFullscreen(false)}
+          autoHideControls={true}
+          theme="dark"
+        />
       )}
     </div>
   );
