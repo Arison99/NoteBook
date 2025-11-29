@@ -5,3 +5,10 @@ couchdb
 cryptography
 zlib-ng
 graphene-flask
+python-dotenv
+ariadne
+pytest
+pytest-cov
+pytest-mock
+responses
+requests-mock
