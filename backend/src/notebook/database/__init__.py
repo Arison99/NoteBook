@@ -1,0 +1,1 @@
+"""Database layer with CouchDB integration and replication"""
