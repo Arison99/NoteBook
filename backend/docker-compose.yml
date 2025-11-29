@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # Primary CouchDB Node
+  couchdb-primary:
+    image: couchdb:3.3
+    container_name: notebook-couchdb-primary
+    restart: always
+    ports:
+      - "5984:5984"
+    environment:
+      COUCHDB_USER: Admin
+      COUCHDB_PASSWORD: password123
+      COUCHDB_SECRET: mysecretkey
+      NODENAME: couchdb-primary
+    volumes:
+      - couchdb_primary_data:/opt/couchdb/data
+      - couchdb_primary_config:/opt/couchdb/etc/local.d
+    networks:
+      - couchdb-cluster
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Replica Node 1
+  couchdb-replica1:
+    image: couchdb:3.3
+    container_name: notebook-couchdb-replica1
+    restart: always
+    ports:
+      - "5985:5984"
+    environment:
+      COUCHDB_USER: Admin
+      COUCHDB_PASSWORD: password123
+      COUCHDB_SECRET: mysecretkey
+      NODENAME: couchdb-replica1
+    volumes:
+      - couchdb_replica1_data:/opt/couchdb/data
+      - couchdb_replica1_config:/opt/couchdb/etc/local.d
+    networks:
+      - couchdb-cluster
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - couchdb-primary
+
+  # Replica Node 2
+  couchdb-replica2:
+    image: couchdb:3.3
+    container_name: notebook-couchdb-replica2
+    restart: always
+    ports:
+      - "5986:5984"
+    environment:
+      COUCHDB_USER: Admin
+      COUCHDB_PASSWORD: password123
+      COUCHDB_SECRET: mysecretkey
+      NODENAME: couchdb-replica2
+    volumes:
+      - couchdb_replica2_data:/opt/couchdb/data
+      - couchdb_replica2_config:/opt/couchdb/etc/local.d
+    networks:
+      - couchdb-cluster
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - couchdb-primary
+
+  # Replica Node 3 (optional)
+  couchdb-replica3:
+    image: couchdb:3.3
+    container_name: notebook-couchdb-replica3
+    restart: always
+    ports:
+      - "5987:5984"
+    environment:
+      COUCHDB_USER: Admin
+      COUCHDB_PASSWORD: password123
+      COUCHDB_SECRET: mysecretkey
+      NODENAME: couchdb-replica3
+    volumes:
+      - couchdb_replica3_data:/opt/couchdb/data
+      - couchdb_replica3_config:/opt/couchdb/etc/local.d
+    networks:
+      - couchdb-cluster
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - couchdb-primary
+    profiles:
+      - full-cluster  # Only start with --profile full-cluster
+
+  # NoteBook Backend with Replication
+  notebook-backend:
+    build: .
+    container_name: notebook-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      COUCHDB_URL: http://couchdb-primary:5984/
+      COUCHDB_USER: Admin
+      COUCHDB_PASSWORD: password123
+      REPLICATION_NODES: http://couchdb-replica1:5984/,http://couchdb-replica2:5984/
+      CONTINUOUS_REPLICATION: true
+      REPLICATION_RETRY_SECONDS: 30
+      FLASK_ENV: development
+    networks:
+      - couchdb-cluster
+    depends_on:
+      couchdb-primary:
+        condition: service_healthy
+      couchdb-replica1:
+        condition: service_healthy
+      couchdb-replica2:
+        condition: service_healthy
+
+  # Load Balancer (HAProxy) for CouchDB
+  couchdb-loadbalancer:
+    image: haproxy:2.6
+    container_name: notebook-couchdb-lb
+    ports:
+      - "5983:80"
+      - "8404:8404"  # Stats page
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - couchdb-cluster
+    depends_on:
+      - couchdb-primary
+      - couchdb-replica1
+      - couchdb-replica2
+    profiles:
+      - loadbalancer
+
+volumes:
+  couchdb_primary_data:
+  couchdb_primary_config:
+  couchdb_replica1_data:
+  couchdb_replica1_config:
+  couchdb_replica2_data:
+  couchdb_replica2_config:
+  couchdb_replica3_data:
+  couchdb_replica3_config:
+
+networks:
+  couchdb-cluster:
+    driver: bridge
