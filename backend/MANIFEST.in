@@ -1,0 +1,20 @@
+include README.md
+include requirements.txt
+include pytest.ini
+include .env.example
+include Dockerfile
+include docker-compose.yml
+include haproxy.cfg
+include REPLICATION_GUIDE.md
+
+recursive-include config *
+recursive-include docs *
+recursive-include scripts *
+recursive-include tests *
+
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .DS_Store
+recursive-exclude * .pytest_cache
+recursive-exclude venv *
+recursive-exclude .venv *
